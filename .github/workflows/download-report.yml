@@ -1,0 +1,38 @@
+name: Download NCFC report
+
+on:
+  schedule:
+    # Run daily at 06:00 UTC.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  download-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Download latest PDF
+        run: python src/download_report.py
+
+      - name: Commit updated report
+        run: |
+          if git diff --quiet -- reports/LatestAgriculturalCondAsses.pdf; then
+            echo "The downloaded report has not changed."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/LatestAgriculturalCondAsses.pdf
+          git commit -m "Update NCFC agricultural conditions report"
+          git push
